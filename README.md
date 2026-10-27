@@ -4,6 +4,10 @@ Migración de Django a **Next.js App Router, TypeScript, Prisma y PostgreSQL**. 
 
 El código Django se conserva para exportar los datos y facilitar la comparación. La aplicación principal de esta rama se ejecuta con Node.js.
 
+## Requisitos e identidad institucional
+
+Consulta [los requisitos confirmados y decisiones pendientes](docs/requisitos-confirmados.md). El login y el menú usan una adaptación digital del logo adjunto, con guindo, crema, gris y negro. El panel docente permite filtrar por carrera y la consulta restringida muestra un aviso de mensualidades pendientes.
+
 ## Instalar
 
 Requisitos: Node.js 22.14 o posterior y PostgreSQL 17.

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { requireUser } from "@/lib/auth";
 import { displayName } from "@/lib/rules";
 import { logoutAction } from "@/app/actions";
@@ -10,7 +11,7 @@ export function Notice({ query }: { query: Query }) {
     {success && <div role="status" className="notice success">{success}</div>}</>;
 }
 export function Logo() {
-  return <div className="logo" aria-label="Instituto Tecnológico Ceicom"><span>INSTITUTO TECNOLÓGICO</span><strong>Ceicom</strong></div>;
+  return <Image className="institution-logo" src="/brand/ceicom-logo.png" alt="Instituto Tecnológico Ceicom" width={1881} height={836} priority />;
 }
 export async function Shell({ children }: { children: React.ReactNode }) {
   const user = await requireUser();

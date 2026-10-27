@@ -79,4 +79,4 @@ Las pruebas de integración vacían sus tablas; el guard rechaza cualquier DATAB
 
 ## Referencia visual
 
-Se conservan los colores guindo y crema y se añade un identificador tipográfico inspirado en la imagen proporcionada. El archivo del logotipo original no está en el repositorio; el texto tipográfico no es una reproducción exacta del arte adjunto.
+Se usan guindo, crema, gris y negro. El login y el menú muestran public/brand/ceicom-logo.png, una adaptación digital de la imagen adjunta. No sustituye al archivo maestro institucional; puede reemplazarse en esa ruta sin modificar componentes. Ver requisitos-confirmados.md para el alcance de esta entrega.

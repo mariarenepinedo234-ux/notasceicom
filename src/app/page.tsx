@@ -13,6 +13,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     include: { subject: { include: { career: true } }, module: { include: { year: true } }, teacher: true },
     orderBy: [{ module: { year: { year: "desc" } } }, { module: { number: "asc" } }, { subject: { name: "asc" } }],
   }) : [];
+  const career = queryValue(query, "career");
+  const careerOptions = [...new Map(offerings.map(o => [o.subject.careerId, o.subject.career])).values()]
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+  const visibleOfferings = career ? offerings.filter(o => String(o.subject.careerId) === career) : offerings;
   const enrollments = user.isSuperuser ? await db.enrollment.findMany({
     include: { student: { include: { user: true } }, career: true, year: true },
     orderBy: [{ year: { year: "desc" } }, { student: { code: "asc" } }],
@@ -40,16 +44,19 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           {!enrollments.length && <tr><td colSpan={4}>Aún no hay matrículas. Completa los catálogos para empezar.</td></tr>}
         </tbody></table></div></section>
     </>}
-    {!student && <section className="panel"><div className="panel-head"><h2>Materias asignadas <span className="count">{offerings.length}</span></h2>
+    {!student && <section className="panel"><div className="panel-head"><h2>Materias asignadas <span className="count">{visibleOfferings.length}</span></h2>
+      <form className="filters" method="get"><label>Carrera<select aria-label="Carrera" name="career" defaultValue={career}>
+        <option value="">Todas mis carreras</option>{careerOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+      </select></label><button>Filtrar carreras</button></form>
       {user.isSuperuser && <Link href="/admin/offerings">Nueva asignación →</Link>}</div>
-      {offerings.map(o => <div className="module" key={o.id}><div><h3>{o.subject.name} <span className="part">Parte {o.subject.part}</span></h3>
+      {visibleOfferings.map(o => <div className="module" key={o.id}><div><h3>{o.subject.name} <span className="part">Parte {o.subject.part}</span></h3>
         <p>{o.subject.career.name} · Año {o.subject.level} · {o.module.year.year} / Módulo {o.module.number} · {shiftName(o.shift)}</p>
         <small>Docente: {displayName(o.teacher)} · Fin: {o.module.ends.toISOString().slice(0, 10)} · Cierre exclusivo: {localTime(deadlineFor(o.module.ends))}</small></div>
         <Link className="button secondary" href={"/materia/" + o.id}>Abrir planilla →</Link></div>)}
-      {!offerings.length && <Empty>No hay materias asignadas a tu cuenta.</Empty>}</section>}
+      {!visibleOfferings.length && <Empty>No hay materias asignadas para esta selección.</Empty>}</section>}
     {student && <>
       <div className="student-summary"><strong>{student.code}</strong><span>Ingreso {student.entryYear}</span><span>Cada parte se aprueba con 61/100. No se promedian las partes.</span></div>
-      {!student.canViewGrades ? <section className="notice error"><h2>Consulta de notas temporalmente suspendida</h2><p>Comunícate con administración para habilitar la consulta. Tus notas se conservan.</p></section> :
+      {!student.canViewGrades ? <section className="notice error"><h2>Consulta de notas temporalmente suspendida</h2><p>Comunícate con administración para regularizar tus mensualidades pendientes. Una vez habilitada la consulta, podrás volver a ver tus notas. Tus notas e historial se conservan.</p></section> :
         <section className="panel"><div className="panel-head"><h2>Mi historial académico</h2><form className="filters" method="get">
           <label>Gestión<select aria-label="Gestión" name="year" defaultValue={year}><option value="">Todas</option>{years.map(e => <option key={e.yearId} value={e.year.year}>{e.year.year}</option>)}</select></label>
           <label>Módulo<select aria-label="Módulo" name="module" defaultValue={module}><option value="">Todos</option>{[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}</select></label><button>Filtrar</button></form></div>

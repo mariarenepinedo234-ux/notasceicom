@@ -1,6 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 async function login(page: Page, username: string) {
   await page.goto("/login");
+  const logo = page.getByRole("img", { name: "Instituto Tecnológico Ceicom" });
+  await expect(logo).toBeVisible();
+  await expect.poll(() => logo.evaluate(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0)).toBe(true);
   await page.getByLabel("Usuario", { exact: true }).fill(username);
   await page.getByLabel("Contraseña", { exact: true }).fill("CeicomDemo2026!");
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
@@ -9,6 +12,9 @@ async function login(page: Page, username: string) {
 test("autenticación, borrador, publicación, consulta propia y permisos", async ({ page }) => {
   await page.goto("/"); await expect(page).toHaveURL(/\/login/);
   await login(page, "docente_demo");
+  await page.getByLabel("Carrera", { exact: true }).selectOption({ label: "Sistemas Informáticos" });
+  await page.getByRole("button", { name: "Filtrar carreras" }).click();
+  await expect(page).toHaveURL(/career=/);
   const active = page.locator(".module").filter({ hasText: "Módulo 4" }).filter({ hasText: "Mañana" });
   await active.getByRole("link", { name: "Abrir planilla" }).click();
   await page.getByLabel("Nota de CEI-DEMO-001", { exact: true }).fill("83.25");
@@ -39,6 +45,7 @@ test("autenticación, borrador, publicación, consulta propia y permisos", async
   await page.getByRole("button", { name: "Cerrar sesión" }).click();
   await login(page, "estudiante_demo");
   await expect(page.getByRole("heading", { name: "Consulta de notas temporalmente suspendida" })).toBeVisible();
+  await expect(page.getByText(/regularizar tus mensualidades pendientes/)).toBeVisible();
   await expect(page.getByRole("cell", { name: "83.25 / 100" })).toHaveCount(0);
 });
 test("sesión HTTP segura y formulario con origen ajeno rechazado", async ({ page, context }) => {
