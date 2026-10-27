@@ -5,6 +5,11 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
 model User {
   id           Int       @id @default(autoincrement())
   username     String    @unique @db.VarChar(150)
@@ -12,6 +17,9 @@ model User {
   firstName    String    @default("") @db.VarChar(150)
   lastName     String    @default("") @db.VarChar(150)
   email        String    @default("") @db.VarChar(254)
+  role         Role      @default(TEACHER)
+  ci           String?   @unique @db.VarChar(30)
+  mustChangePassword Boolean @default(false)
   isActive     Boolean   @default(true)
   isSuperuser  Boolean   @default(false)
   isStaff      Boolean   @default(false)

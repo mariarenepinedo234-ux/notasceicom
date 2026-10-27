@@ -14,9 +14,10 @@ export async function currentUser() {
   const { password: _password, ...user } = session.user;
   return user;
 }
-export async function requireUser() {
+export async function requireUser(options: { allowTemporary?: boolean } = {}) {
   const user = await currentUser();
   if (!user) redirect("/login");
+  if (user.mustChangePassword && !options.allowTemporary) redirect("/password");
   return user;
 }
 export async function requireAdmin() {

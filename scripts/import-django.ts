@@ -36,7 +36,7 @@ export async function importDjango(input: unknown, client: PrismaClient) {
             "Hash de contraseña no compatible para usuario #" + id + ". Agrega soporte para ese algoritmo antes de migrar.");
           await tx.user.create({ data: { id, username: s.parse(f.username), password,
             firstName: s.parse(f.first_name), lastName: s.parse(f.last_name), email: s.parse(f.email),
-            isActive: b.parse(f.is_active), isSuperuser: b.parse(f.is_superuser), isStaff: b.parse(f.is_staff), dateJoined: instant(f.date_joined) } });
+            role: b.parse(f.is_superuser) ? "ADMIN" : "TEACHER", isActive: b.parse(f.is_active), isSuperuser: b.parse(f.is_superuser), isStaff: b.parse(f.is_staff), dateJoined: instant(f.date_joined) } });
           break;
         }
         case "academics.career": await tx.career.create({ data: { id, name: s.parse(f.name) } }); break;
@@ -58,6 +58,8 @@ export async function importDjango(input: unknown, client: PrismaClient) {
         case "academics.auditevent": await tx.auditEvent.create({ data: { id, actorId: n.parse(f.actor), action: s.parse(f.action), details: s.parse(f.details), createdAt: instant(f.created_at) } }); break;
       }
     }
+    await tx.user.updateMany({ where: { isSuperuser: false, student: { isNot: null } }, data: { role: "STUDENT" } });
+    // No se inventan CIs ni se cambian las credenciales originales de Django.
     // Valida invariantes relacionales que no se expresan con una FK simple.
     const invalid = await tx.$queryRaw<{ id: number }[]>`
       SELECT m."id" FROM "Module" m JOIN "AcademicYear" y ON m."yearId" = y."id"

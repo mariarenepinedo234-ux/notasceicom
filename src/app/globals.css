@@ -10,3 +10,19 @@
 .login-intro .institution-logo{max-width:300px}
 :root{--ink:#211c1f}
 @media(max-width:760px){.brand .institution-logo{max-width:160px}.login-intro .institution-logo{max-width:200px}.filters select[name=career]{max-width:230px}}
+
+/* CEICOM v0.3: fondo vino oscuro con tarjetas claras para lectura. */
+:root{--wine:#4a1028;--wine-dark:#2b0817;--cream:#f6f1e8;--ink:#211b1e}
+body,.workspace{background:#2d0b1b}
+aside{background:#230812}
+header{background:#3a0e23;color:#eadde2;border-bottom-color:#59263d}
+.institution-tag{border-color:#80546a;color:#f2e6e9}
+.page-title h1{color:#fff7ed}.page-title p{color:#dcc9d1}.page-title .eyebrow{color:#d9b9a0}
+.workspace main>.back{color:#f1d9c6}
+footer{color:#d9c4cd;border-top-color:#542036}
+.login-intro{background:#310b1e}.login-form{background:#f3eee6}
+.quick-actions{display:flex;flex-wrap:wrap;gap:12px;margin:-6px 0 28px}
+.quick-actions .button{background:#691e3b;border-color:#8a4761;color:#fff5ea}
+.quick-actions .secondary{background:transparent;border-color:#987182;color:#f6e8ec}
+.brand .institution-logo,.login-intro .institution-logo{border-radius:8px}
+@media(max-width:760px){.quick-actions{gap:8px}.quick-actions .button{padding:9px 12px;font-size:12px}}

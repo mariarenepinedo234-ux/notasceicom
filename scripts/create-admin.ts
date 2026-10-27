@@ -8,7 +8,7 @@ async function main() {
   validatePassword(password, username);
   const db = new PrismaClient();
   try {
-    await db.user.create({ data: { username, password: await hashPassword(password), isActive: true, isSuperuser: true, isStaff: true } });
+    await db.user.create({ data: { username, password: await hashPassword(password), isActive: true, isSuperuser: true, isStaff: true, role: "ADMIN" } });
     console.log("Administrador creado. Elimina las variables temporales de contraseña.");
   } finally { await db.$disconnect(); }
 }

@@ -14,9 +14,9 @@ async function main() {
         console.log("La demostración ya existe. No se modificaron datos."); return;
       }
       invariant(await tx.user.count() + await tx.career.count() + await tx.academicYear.count() === 0, "La base contiene datos ajenos a la demostración.");
-      await tx.user.create({ data: { username: "admin_demo", firstName: "Administración", lastName: "CEICOM", password, isSuperuser: true, isStaff: true } });
+      await tx.user.create({ data: { username: "admin_demo", firstName: "Administración", lastName: "CEICOM", password, isSuperuser: true, isStaff: true, role: "ADMIN" } });
       const teacher = await tx.user.create({ data: { username: "docente_demo", firstName: "Carlos", lastName: "Rojas", password } });
-      const user = await tx.user.create({ data: { username: "estudiante_demo", firstName: "Ana", lastName: "López Vargas", password } });
+      const user = await tx.user.create({ data: { username: "estudiante_demo", role: "STUDENT", firstName: "Ana", lastName: "López Vargas", password } });
       const today = Number(new Intl.DateTimeFormat("en", { timeZone: "America/La_Paz", year: "numeric" }).format(new Date()));
       const year = await tx.academicYear.create({ data: { year: today } });
       const career = await tx.career.create({ data: { name: "Sistemas Informáticos" } });

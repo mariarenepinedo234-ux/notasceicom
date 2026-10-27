@@ -2,6 +2,8 @@
 
 Esta especificación actualiza los puntos de la propuesta histórica. La aplicación principal es Next.js, TypeScript, Prisma y PostgreSQL; Django se conserva como origen para exportación y comparación.
 
+Actualización de personas y credenciales: [versión 0.3](actualizacion-0.3.md).
+
 ## Perfiles y permisos
 
 - Administración: usuarios y expedientes de estudiantes, cuentas docentes, carreras, materias/partes, gestiones, módulos con fechas, matrículas, ofertas, asignaciones e inscripciones. Puede cambiar turnos con motivo, autorizar carga fuera de plazo por oferta y restringir/habilitar manualmente la consulta.

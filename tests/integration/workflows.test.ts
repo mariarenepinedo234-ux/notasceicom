@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { pbkdf2Sync } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { accessibleOffering, saveGrades, setVisibility, studentResults, transferEnrollment } from "../../src/lib/academic";
+import { savePerson, updateOwnPassword, updateOwnUsername } from "../../src/lib/people";
 import { saveCatalog } from "../../src/lib/catalog";
 import { deadlineFor, invariant } from "../../src/lib/rules";
 import { verifyPassword } from "../../src/lib/password";
@@ -14,10 +15,10 @@ const db = new PrismaClient();
 const tables = '"Session", "LoginAttempt", "AuditEvent", "Extension", "Registration", "Offering", "Enrollment", "Student", "Subject", "Module", "AcademicYear", "Career", "User"';
 async function clear() { await db.$executeRawUnsafe("TRUNCATE TABLE " + tables + " RESTART IDENTITY CASCADE"); }
 async function fixture() {
-  const admin = await db.user.create({ data: { username: "admin", password: "!", isSuperuser: true } });
+  const admin = await db.user.create({ data: { username: "admin", password: "!", isSuperuser: true, role: "ADMIN" } });
   const teacher = await db.user.create({ data: { username: "teacher", password: "!" } });
   const other = await db.user.create({ data: { username: "other", password: "!" } });
-  const su = await db.user.create({ data: { username: "student", firstName: "Ana", password: "!" } });
+  const su = await db.user.create({ data: { username: "student", role: "STUDENT", firstName: "Ana", password: "!" } });
   const student = await db.student.create({ data: { userId: su.id, code: "S001", entryYear: 2024 } });
   const career = await db.career.create({ data: { name: "Sistemas" } });
   const yr = new Date().getUTCFullYear() + 1;
@@ -126,10 +127,10 @@ describe("paridad de flujos académicos sobre PostgreSQL", () => {
     await assert.rejects(saveCatalog(x.admin.id, "modules", null, { yearId: x.year.id, number: 2, starts: "2026-02-30", ends: "2026-03-31" }, db));
     await assert.rejects(saveCatalog(x.admin.id, "registrations", null, { enrollmentId: x.enrollment.id, offeringId: x.destination.id }, db));
     await db.session.create({ data: { tokenHash: "a".repeat(64), userId: x.teacher.id, version: 0, expires: new Date(Date.now() + 3600000) } });
-    await saveCatalog(x.admin.id, "users", x.teacher.id, { username: "teacher", firstName: "", lastName: "", email: "", isActive: true, isSuperuser: false, password: "CeicomNueva2026!" }, db);
+    await saveCatalog(x.admin.id, "users", x.teacher.id, { username: "teacher", ci: "7654321", role: "TEACHER", firstName: "Carlos", lastName: "Rojas", email: "", isActive: true, password: "CeicomNueva2026!" }, db);
     assert.equal(await db.session.count({ where: { userId: x.teacher.id } }), 0);
     assert.equal((await db.user.findUniqueOrThrow({ where: { id: x.teacher.id } })).sessionVersion, 1);
-    await assert.rejects(saveCatalog(x.admin.id, "users", x.admin.id, { username: "admin", firstName: "", lastName: "", email: "", isActive: false, isSuperuser: false }, db));
+    await assert.rejects(saveCatalog(x.admin.id, "users", x.admin.id, { username: "admin", role: "TEACHER", firstName: "Admin", lastName: "Prueba", email: "", isActive: false }, db));
   });
   test("importación conserva hashes, ids, decimales, auditoría y secuencias; rechaza destino ocupado", async () => {
     await clear();
@@ -159,4 +160,45 @@ describe("paridad de flujos académicos sobre PostgreSQL", () => {
     await assert.rejects(importDjango([...fixture, { model: "academics.registration", pk: 99, fields: { enrollment: 7, offering: 6, grade: "101", published: true } }], db));
     assert.equal(await db.user.count(), 0);
   });
+  test("registro único de estudiante crea cuenta y expediente con CI, rol y matrícula", async () => {
+    const data = { ci: "1234567", firstName: "María", lastName: "Pérez", email: "", isActive: true, code: "CEI-2026-002", entryYear: 2026, role: "ADMIN" };
+    const studentId = await savePerson(x.admin.id, "students", null, data, db);
+    const student = await db.student.findUniqueOrThrow({ where: { id: studentId }, include: { user: true } });
+    assert.equal(student.code, data.code); assert.equal(student.user.role, "STUDENT");
+    assert.equal(student.user.isSuperuser, false); assert.equal(student.user.username, data.ci);
+    assert.equal(student.user.ci, data.ci); assert.equal(student.user.mustChangePassword, true);
+    assert.equal(await verifyPassword(data.ci, student.user.password), true);
+    await assert.rejects(studentResults(student.userId, "", "", db));
+    const count = await db.user.count();
+    await assert.rejects(savePerson(x.admin.id, "students", null, { ...data, code: "NEW" }, db));
+    await assert.rejects(savePerson(x.admin.id, "students", null, { ...data, ci: "9999999" }, db));
+    assert.equal(await db.user.count(), count); // La matrícula duplicada no deja usuarios huérfanos.
+  });
+  test("rol docente existe antes de asignar materias y los cambios no borran el expediente", async () => {
+    const teacherId = await savePerson(x.admin.id, "teachers", null, { ci: "2345678-1a", firstName: "José", lastName: "Rojas", email: "", isActive: true }, db);
+    const teacher = await db.user.findUniqueOrThrow({ where: { id: teacherId } });
+    assert.equal(teacher.role, "TEACHER"); assert.equal(teacher.ci, "2345678-1A"); assert.equal(teacher.username, "2345678-1A");
+    assert.equal(await db.offering.count({ where: { teacherId } }), 0);
+    await assert.rejects(savePerson(x.teacher.id, "teachers", null, { ci: "3345678", firstName: "No", lastName: "Autorizado", email: "", isActive: true }, db));
+    await assert.rejects(savePerson(x.admin.id, "users", x.su.id, { role: "TEACHER", firstName: "Ana", lastName: "Pérez", email: "", isActive: true }, db));
+    assert.equal(await db.enrollment.count({ where: { studentId: x.student.id } }), 1);
+  });
+  test("primer cambio elimina contraseña CI; cambiar usuario revoca sesiones y conserva CI y notas", async () => {
+    const studentId = await savePerson(x.admin.id, "students", null, { ci: "3456789", firstName: "Ana", lastName: "Prueba", email: "", isActive: true, code: "S003", entryYear: 2026 }, db);
+    const s = await db.student.findUniqueOrThrow({ where: { id: studentId } });
+    await assert.rejects(updateOwnUsername(s.userId, "ana.nueva", "3456789", db));
+    await assert.rejects(updateOwnPassword(s.userId, "incorrecta", "CeicomPersonal2026!", db));
+    const changed = await updateOwnPassword(s.userId, "3456789", "CeicomPersonal2026!", db);
+    assert.equal(changed.mustChangePassword, false);
+    assert.equal(await verifyPassword("3456789", changed.password), false);
+    assert.equal(await verifyPassword("CeicomPersonal2026!", changed.password), true);
+    await db.session.create({ data: { tokenHash: "b".repeat(64), userId: s.userId, version: changed.sessionVersion, expires: new Date(Date.now() + 3600000) } });
+    const renamed = await updateOwnUsername(s.userId, "ana.nueva", "CeicomPersonal2026!", db);
+    assert.equal(renamed.username, "ana.nueva"); assert.equal(renamed.ci, "3456789");
+    assert.equal(await db.session.count({ where: { userId: s.userId } }), 0);
+    assert.equal((await db.student.findUniqueOrThrow({ where: { id: s.id } })).userId, s.userId);
+    await assert.rejects(updateOwnUsername(s.userId, "teacher", "CeicomPersonal2026!", db));
+    await assert.rejects(savePerson(x.admin.id, "teachers", null, { ci: "3456789", firstName: "CI", lastName: "Duplicado", email: "", isActive: true }, db));
+  });
+
 });

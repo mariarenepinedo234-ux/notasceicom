@@ -1,7 +1,10 @@
+import { requireUser } from "@/lib/auth";
 import { passwordAction } from "@/app/actions";
 import { Shell, PageTitle, Notice, type Query } from "@/components/ui";
 export default async function Password({ searchParams }: { searchParams: Promise<Query> }) {
-  return <Shell><PageTitle eyebrow="MI CUENTA" title="Cambiar contraseña" description="Al guardar se cerrarán las demás sesiones de tu cuenta." />
+  const user = await requireUser({ allowTemporary: true });
+  return <Shell allowTemporary><PageTitle eyebrow="MI CUENTA" title="Cambiar contraseña" description="Al guardar se cerrarán las demás sesiones de tu cuenta." />
+    {user.mustChangePassword && <div role="status" className="notice">Es tu primer acceso o se restableció tu contraseña. Cambia la contraseña temporal antes de continuar. Después podrás cambiar también tu usuario desde Mi cuenta.</div>}
     <Notice query={await searchParams} /><section className="panel padded narrow"><form action={passwordAction}>
       <label>Contraseña actual<input name="currentPassword" type="password" autoComplete="current-password" maxLength={256} required /></label>
       <label>Nueva contraseña<input name="password" type="password" autoComplete="new-password" minLength={10} maxLength={256} required /></label>

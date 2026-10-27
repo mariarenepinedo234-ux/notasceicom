@@ -32,13 +32,14 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     title={user.isSuperuser ? "Un expediente. Toda su trayectoria." : student ? "Hola, " + (user.firstName || user.username) + "." : "Tus materias, en un solo lugar."}
     description={student ? "Consulta tus resultados publicados, por gestión y módulo." : "Organiza, acompaña y da seguimiento a los resultados académicos."} />
     <Notice query={query} />
+    {user.isSuperuser && <div className="quick-actions"><Link className="button" href="/admin/students">Registrar estudiante</Link><Link className="button secondary" href="/admin/teachers">Registrar docente</Link><Link className="button secondary" href="/admin/users">Usuarios y roles</Link></div>}
     {user.isSuperuser && <>
       <div className="stats"><div className="stat"><small>Estudiantes registrados</small><strong>{count}</strong><Link href="/admin/students">Registrar estudiante →</Link></div>
         <div className="stat"><small>Matrículas anuales</small><strong>{enrollments.length}</strong><Link href="/admin/enrollments">Crear matrícula →</Link></div>
         <div className="stat"><small>Gestiones y módulos</small><strong>4 <em>módulos / gestión</em></strong><Link href="/admin/modules">Administrar períodos →</Link></div></div>
       <section className="panel"><div className="panel-head"><h2>Estudiantes y matrículas</h2><Link href="/admin">Catálogos y usuarios →</Link></div>
         <div className="table-wrap"><table><thead><tr><th>Estudiante</th><th>Carrera / gestión</th><th>Nivel / turno</th><th>Acciones</th></tr></thead><tbody>
-          {enrollments.map(e => <tr key={e.id}><td><strong>{displayName(e.student.user)}</strong><small>{e.student.code} · Ingreso {e.student.entryYear}</small></td>
+          {enrollments.map(e => <tr key={e.id}><td><strong>{displayName(e.student.user)}</strong><small>Matrícula {e.student.code} · CI {e.student.user.ci ?? "sin registrar"} · Ingreso {e.student.entryYear}</small></td>
             <td>{e.career.name}<small>Gestión {e.year.year}</small></td><td>Año {e.level} · {shiftName(e.shift)}</td><td className="actions">
               <Link href={"/traslado/" + e.id}>Cambiar turno</Link><Link href={"/consulta/" + e.studentId}>{e.student.canViewGrades ? "Restringir consulta" : "Habilitar consulta"}</Link></td></tr>)}
           {!enrollments.length && <tr><td colSpan={4}>Aún no hay matrículas. Completa los catálogos para empezar.</td></tr>}

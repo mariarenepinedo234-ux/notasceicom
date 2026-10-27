@@ -1,6 +1,6 @@
 {
   "name": "ceicom-registro-academico",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "engines": {
     "node": ">=22.14.0"
@@ -13,11 +13,14 @@
     "test": "tsx --test tests/*.test.ts",
     "test:integration": "tsx --test tests/integration/*.test.ts",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate deploy",
+    "db:migrate": "prisma migrate deploy && prisma generate",
     "db:seed": "tsx scripts/seed.ts",
     "db:import-django": "tsx scripts/import-django.ts",
     "admin:create": "tsx scripts/create-admin.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "predev": "prisma generate",
+    "prestart": "prisma generate",
+    "predb:seed": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",

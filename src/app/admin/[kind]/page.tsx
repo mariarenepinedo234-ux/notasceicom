@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { catalogNames, isCatalog } from "@/lib/catalog";
 import { catalogView } from "@/lib/catalog-ui";
 import { catalogAction } from "@/app/actions";
+import { PersonForm } from "@/components/person-form";
 import { Notice, PageTitle, queryValue, Shell, type Query } from "@/components/ui";
 function fieldValue(value: unknown, type: string | undefined) {
   if (value instanceof Date) return type === "date" ? value.toISOString().slice(0, 10) : new Date(value.getTime() - 4 * 3600000).toISOString().slice(0, 16);
@@ -29,7 +30,7 @@ export default async function Catalog({ params, searchParams }: { params: Promis
       </div></div>)}
       {!view.rows.length && <div className="empty">Aún no hay registros en este catálogo.</div>}</section>
       <section className="panel padded catalog-form"><h2>{editing ? "Editar #" + editing.id : "Nuevo registro"}</h2>
-        <form action={catalogAction} key={editing?.id ?? "new"}><input type="hidden" name="kind" value={kind} />
+        {kind === "users" || kind === "students" || kind === "teachers" ? <PersonForm key={editing?.id ?? "new"} kind={kind} recordId={editing?.id} initial={editing?.values} /> : <form action={catalogAction} key={editing?.id ?? "new"}><input type="hidden" name="kind" value={kind} />
           <input type="hidden" name="recordId" value={editing?.id ?? ""} />
           {view.fields.map(field => {
             const raw = editing?.values[field.name], current = fieldValue(raw, field.type);
@@ -44,8 +45,9 @@ export default async function Catalog({ params, searchParams }: { params: Promis
                   min={field.min} max={field.max} maxLength={field.maxLength} readOnly={frozen} autoComplete={field.type === "password" ? "new-password" : "off"} />}
             </label>;
           })}
-          {kind === "users" && <p className="muted">El docente se asigna a una oferta. El estudiante se vincula a un expediente. Restablecer una contraseña cierra sus sesiones.</p>}
           <button>{editing ? "Guardar cambios" : "Crear registro"}</button>
           {editing && <Link className="back" href={"/admin/" + kind}>Cancelar edición</Link>}
-        </form></section></div></Shell>;
+        </form>}
+        {editing && (kind === "users" || kind === "students" || kind === "teachers") && <Link className="back" href={"/admin/" + kind}>Cancelar edición</Link>}
+      </section></div></Shell>;
 }

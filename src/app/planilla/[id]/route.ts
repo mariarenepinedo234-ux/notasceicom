@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const actor = await currentUser();
   if (!actor) return new Response("Inicia sesión.", { status: 401 });
+  if (actor.mustChangePassword) return new Response("Primero cambia tu contraseña temporal.", { status: 403 });
   const { id } = await context.params;
   if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id))) return new Response("No encontrada.", { status: 404 });
   const o = await accessibleOffering(actor, Number(id));

@@ -1,18 +1,19 @@
 import { db } from "./db";
 import { type Catalog } from "./catalog";
 import { displayName, shiftName } from "./rules";
+import { roleLabels } from "./people";
 export type Option = { value: string; label: string };
 export type Field = { name: string; label: string; type?: "text" | "number" | "date" | "datetime-local" | "checkbox" | "email" | "password" | "textarea";
   options?: Option[]; required?: boolean; min?: number; max?: number; maxLength?: number; immutable?: boolean };
 export type CatalogRow = { id: number; title: string; detail: string; values: Record<string, unknown> };
 export async function catalogView(kind: Catalog): Promise<{ fields: Field[]; rows: CatalogRow[]; editable: boolean }> {
   const [users, careers, years, modules, subjects, students, enrollments, offerings] = await Promise.all([
-    db.user.findMany({ select: { id: true, username: true, firstName: true, lastName: true, email: true, isActive: true, isSuperuser: true }, orderBy: { username: "asc" } }),
+    db.user.findMany({ select: { id: true, username: true, firstName: true, lastName: true, email: true, isActive: true, isSuperuser: true, role: true, ci: true, student: { select: { code: true, entryYear: true } } }, orderBy: { username: "asc" } }),
     db.career.findMany({ orderBy: { name: "asc" } }),
     db.academicYear.findMany({ orderBy: { year: "desc" } }),
     db.module.findMany({ include: { year: true }, orderBy: [{ year: { year: "desc" } }, { number: "asc" }] }),
     db.subject.findMany({ include: { career: true }, orderBy: [{ name: "asc" }, { part: "asc" }] }),
-    db.student.findMany({ include: { user: { select: { username: true, firstName: true, lastName: true } } }, orderBy: { code: "asc" } }),
+    db.student.findMany({ include: { user: { select: { username: true, firstName: true, lastName: true, email: true, ci: true, role: true, isActive: true } } }, orderBy: { code: "asc" } }),
     db.enrollment.findMany({ include: { student: true, year: true, career: true } }),
     db.offering.findMany({ include: { subject: true, module: { include: { year: true } }, teacher: { select: { username: true, firstName: true, lastName: true } } } }),
   ]);
@@ -26,14 +27,11 @@ export async function catalogView(kind: Catalog): Promise<{ fields: Field[]; row
   const name: Field = { name: "name", label: "Nombre", maxLength: 150, required: true };
   const row = (v: { id: number }, title: string, detail: string): CatalogRow => ({ id: v.id, title, detail, values: { ...v } });
   switch (kind) {
-    case "users": return { editable: true, fields: [
-      { name: "username", label: "Usuario", maxLength: 150, required: true },
-      { name: "firstName", label: "Nombres", maxLength: 150 }, { name: "lastName", label: "Apellidos", maxLength: 150 },
-      { name: "email", label: "Correo", type: "email", maxLength: 254 },
-      { name: "password", label: "Contraseña (vacía al editar conserva la actual)", type: "password", maxLength: 256 },
-      { name: "isActive", label: "Cuenta activa", type: "checkbox" },
-      { name: "isSuperuser", label: "Administrador", type: "checkbox" },
-    ], rows: users.map(u => row(u, displayName(u), u.username + " · " + (u.isSuperuser ? "Administración" : "Cuenta") + " · " + (u.isActive ? "Activa" : "Inactiva"))) };
+    case "users": return { editable: true, fields: [], rows: users.map(u => ({ ...row(u, displayName(u),
+      roleLabels[u.isSuperuser ? "ADMIN" : u.role] + " · CI: " + (u.ci ?? "sin registrar") + " · Usuario: " + u.username + " · " + (u.isActive ? "Activa" : "Inactiva")),
+      values: { ...u, role: u.isSuperuser ? "ADMIN" : u.role, code: u.student?.code ?? "", entryYear: u.student?.entryYear ?? "" } })) };
+    case "teachers": return { editable: true, fields: [], rows: users.filter(u => u.role === "TEACHER" && !u.isSuperuser)
+      .map(u => row(u, displayName(u), "Docente · CI: " + (u.ci ?? "sin registrar") + " · Usuario: " + u.username)) };
     case "careers": return { editable: true, fields: [name], rows: careers.map(c => row(c, c.name, "Carrera")) };
     case "years": return { editable: true, fields: [{ name: "year", label: "Gestión", type: "number", min: 2000, max: 2200, required: true }],
       rows: years.map(y => row(y, String(y.year), "Gestión académica")) };
@@ -45,10 +43,10 @@ export async function catalogView(kind: Catalog): Promise<{ fields: Field[]; row
     case "subjects": return { editable: true, fields: [select("careerId", "Carrera", opts(careers, c => c.name)), name, level,
       { name: "part", label: "Parte", type: "number", min: 1, max: 2, required: true }],
       rows: subjects.map(s => row(s, s.name + " · Parte " + s.part, s.career.name + " · Año " + s.level)) };
-    case "students": return { editable: false, fields: [
-      select("userId", "Usuario", userOptions), { name: "code", label: "Código", maxLength: 30, required: true },
-      { name: "entryYear", label: "Gestión de ingreso", type: "number", min: 0, max: 9999, required: true },
-    ], rows: students.map(s => row(s, s.code + " · " + displayName(s.user), "Ingreso " + s.entryYear + " · Consulta " + (s.canViewGrades ? "habilitada" : "restringida"))) };
+    case "students": return { editable: true, fields: [], rows: students.map(s => ({
+      ...row(s, s.code + " · " + displayName(s.user), "CI: " + (s.user.ci ?? "sin registrar") + " · Ingreso " + s.entryYear + " · Consulta " + (s.canViewGrades ? "habilitada" : "restringida")),
+      values: { ...s.user, code: s.code, entryYear: s.entryYear },
+    })) };
     case "enrollments": return { editable: false, fields: [
       select("studentId", "Estudiante", opts(students, s => s.code + " · " + displayName(s.user))),
       select("yearId", "Gestión", opts(years, y => String(y.year))),
@@ -57,7 +55,7 @@ export async function catalogView(kind: Catalog): Promise<{ fields: Field[]; row
     case "offerings": return { editable: true, fields: [
       select("subjectId", "Materia / parte", subjectOptions, true),
       select("moduleId", "Módulo", opts(modules, m => m.year.year + " · Módulo " + m.number), true),
-      select("teacherId", "Docente", userOptions), select("shift", "Turno", shiftOptions, true),
+      select("teacherId", "Docente", opts(users.filter(u => u.role === "TEACHER" && !u.isSuperuser && u.isActive), u => displayName(u) + " · " + (u.ci ?? u.username))), select("shift", "Turno", shiftOptions, true),
     ], rows: offerings.map(o => row(o, offeringLabel(o), "Docente: " + displayName(o.teacher))) };
     case "registrations": {
       const registrations = await db.registration.findMany({ include: { enrollment: { include: { student: true } }, offering: { include: { subject: true } } } });

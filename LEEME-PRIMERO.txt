@@ -9,8 +9,13 @@ REQUISITOS
 - PostgreSQL 17 disponible localmente o en un servidor.
 - Opcional: Docker para crear PostgreSQL con compose.yaml.
 
+SI YA TIENES EL SISTEMA FUNCIONANDO
+Lee docs/actualizacion-0.3.md. Conserva tu .env y tu base.
+Ejecuta npm ci, npm run db:migrate y npm run dev.
+No borres datos ni vuelvas a cargar demostración.
+
 INICIO RÁPIDO
-1. Descomprime el ZIP y abre una terminal dentro de ceicom-nextjs.
+1. Descomprime el ZIP y abre una terminal en la carpeta que contiene package.json.
 2. Copia .env.example a .env y configura DATABASE_URL para TU base PostgreSQL.
    Linux/macOS: cp .env.example .env
    PowerShell: Copy-Item .env.example .env
@@ -50,3 +55,9 @@ ANTES DEL USO REAL
 Configura HTTPS, cambia/elimina cuentas demo, valida permisos y comprueba
 copias de seguridad con restauración. Consulta README.md y docs/ para
 las decisiones académicas pendientes y los pasos de producción.
+
+REGISTRO DE PERSONAS
+En Estudiantes o Docentes registra el CI y los datos personales.
+Las cuentas NUEVAS usan el CI como usuario y contraseña temporal.
+Se exige cambiar esa contraseña al entrar. El usuario se puede cambiar
+después desde Mi cuenta. Las cuentas anteriores siguen como antes.

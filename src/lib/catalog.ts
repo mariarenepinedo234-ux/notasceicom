@@ -2,14 +2,14 @@ import { z } from "zod";
 import { db } from "./db";
 import { actorIn, atomic, audit } from "./academic";
 import { dateOnly, id, invariant, reason } from "./rules";
-import { hashPassword, validatePassword } from "./password";
+import { savePerson } from "./people";
 const text = z.string().trim().min(1).max(150);
 const pk = z.coerce.number().int().positive();
 const level = z.coerce.number().int().min(1).max(3);
 const shift = z.enum(["M", "T", "N"]);
 export const catalogNames = {
   users: "Usuarios", careers: "Carreras", years: "Gestiones", modules: "Módulos",
-  subjects: "Materias / partes", students: "Estudiantes", enrollments: "Matrículas",
+  subjects: "Materias / partes", students: "Estudiantes", teachers: "Docentes", enrollments: "Matrículas anuales",
   offerings: "Asignaciones / ofertas", registrations: "Inscripciones", extensions: "Autorizar carga de notas",
 } as const;
 export type Catalog = keyof typeof catalogNames;
@@ -30,36 +30,11 @@ const schemas = {
 };
 export async function saveCatalog(actorId: number, kind: Catalog, recordId: number | null,
   raw: Record<string, unknown>, client = db) {
+  if (kind === "users" || kind === "students" || kind === "teachers") return savePerson(actorId, kind, recordId, raw, client);
   return atomic(async tx => {
     const actor = await actorIn(tx, actorId, true);
     let savedId: number;
     switch (kind) {
-      case "users": {
-        const data = schemas.users.parse(raw);
-        if (recordId) {
-          const existing = await tx.user.findUnique({ where: { id: id(recordId) } });
-          invariant(existing, "Usuario inexistente.");
-          if (existing.isSuperuser && existing.isActive && (!data.isSuperuser || !data.isActive)) {
-            invariant(await tx.user.count({ where: { isSuperuser: true, isActive: true, id: { not: recordId } } }) > 0,
-              "Debe permanecer al menos un administrador activo.");
-          }
-          invariant(recordId !== actor.id || (data.isActive && data.isSuperuser),
-            "No puedes quitar tu propio acceso administrativo.");
-          const password = typeof raw.password === "string" ? raw.password : "";
-          if (password) validatePassword(password, data.username);
-          const revoke = Boolean(password) || existing.isActive !== data.isActive || existing.isSuperuser !== data.isSuperuser;
-          await tx.user.update({ where: { id: recordId }, data: { ...data, isStaff: data.isSuperuser,
-            ...(password ? { password: await hashPassword(password) } : {}),
-            ...(revoke ? { sessionVersion: { increment: 1 } } : {}) } });
-          if (revoke) await tx.session.deleteMany({ where: { userId: recordId } });
-          savedId = recordId;
-        } else {
-          invariant(typeof raw.password === "string", "Ingresa una contraseña.");
-          validatePassword(raw.password, data.username);
-          savedId = (await tx.user.create({ data: { ...data, isStaff: data.isSuperuser, password: await hashPassword(raw.password) } })).id;
-        }
-        break;
-      }
       case "careers": {
         const data = schemas.careers.parse(raw);
         savedId = (recordId ? await tx.career.update({ where: { id: recordId }, data }) : await tx.career.create({ data })).id;
@@ -98,12 +73,6 @@ export async function saveCatalog(actorId: number, kind: Catalog, recordId: numb
         savedId = (recordId ? await tx.subject.update({ where: { id: recordId }, data }) : await tx.subject.create({ data })).id;
         break;
       }
-      case "students": {
-        invariant(!recordId, "El expediente es inmutable. Usa las acciones de consulta y traslado.");
-        const data = schemas.students.parse(raw);
-        savedId = (await tx.student.create({ data })).id;
-        break;
-      }
       case "enrollments": {
         invariant(!recordId, "La matrícula es inmutable. Usa Cambiar turno.");
         savedId = (await tx.enrollment.create({ data: schemas.enrollments.parse(raw) })).id;
@@ -111,6 +80,7 @@ export async function saveCatalog(actorId: number, kind: Catalog, recordId: numb
       }
       case "offerings": {
         const data = schemas.offerings.parse(raw);
+        invariant(await tx.user.findFirst({ where: { id: data.teacherId, role: "TEACHER", isActive: true, isSuperuser: false } }), "Elige un docente activo.");
         if (recordId) {
           const previous = await tx.offering.findUniqueOrThrow({ where: { id: recordId } });
           invariant(previous.subjectId === data.subjectId && previous.moduleId === data.moduleId && previous.shift === data.shift,

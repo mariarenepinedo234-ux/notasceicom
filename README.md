@@ -1,4 +1,4 @@
-# CEICOM · Registro académico · Next.js
+# CEICOM · Registro académico · Next.js · v0.3
 
 Migración de Django a **Next.js App Router, TypeScript, Prisma y PostgreSQL**. Incluye los portales de administración, docentes y estudiantes y los flujos académicos de la versión Django: catálogos, matrículas, ofertas, inscripciones, notas, publicación, reaperturas, correcciones, traslado, consulta restringida, CSV y auditoría.
 
@@ -7,6 +7,10 @@ El código Django se conserva para exportar los datos y facilitar la comparació
 ## Requisitos e identidad institucional
 
 Consulta [los requisitos confirmados y decisiones pendientes](docs/requisitos-confirmados.md). El login y el menú usan una adaptación digital del logo adjunto, con guindo, crema, gris y negro. El panel docente permite filtrar por carrera y la consulta restringida muestra un aviso de mensualidades pendientes.
+
+## Actualizar una instalación existente
+
+Sigue [la actualización 0.3](docs/actualizacion-0.3.md): conserva tu `.env` y base PostgreSQL; ejecuta `npm ci`, `npm run db:migrate` y `npm run dev`. La actualización mantiene credenciales y datos anteriores.
 
 ## Instalar
 
@@ -69,7 +73,10 @@ Usuarios: `admin_demo`, `docente_demo`, `estudiante_demo`. Contraseña pública 
 
 ## Uso
 
-- Administración: crea usuarios → carreras y gestiones → módulos → materias/partes → estudiantes → matrículas → ofertas → inscripciones.
+Las cuentas nuevas de docentes y estudiantes usan el CI como usuario y contraseña temporal. Se exige cambiar la contraseña al primer acceso; después pueden cambiar el usuario desde Mi cuenta. Los administradores usan credenciales propias. Los accesos existentes y de demostración se conservan.
+
+
+- Administración: registra estudiantes y docentes con su rol y CI; crea carreras y gestiones → módulos → materias/partes → matrículas anuales → ofertas → inscripciones.
 - Docente: abre sus planillas, guarda borradores y publica resultados. Solo puede editar en plazo o con autorización; las notas publicadas se corrigen por administración con motivo.
 - Estudiante: consulta únicamente sus resultados publicados y habilitados, filtrados por gestión y módulo.
 - Administración: autoriza reaperturas por oferta, registra traslados de turno y restringe/habilita consulta con motivo. La auditoría conserva los cambios.

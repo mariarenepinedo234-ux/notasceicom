@@ -1,11 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
-async function login(page: Page, username: string) {
+async function login(page: Page, username: string, password = "CeicomDemo2026!") {
   await page.goto("/login");
   const logo = page.getByRole("img", { name: "Instituto Tecnológico Ceicom" });
   await expect(logo).toBeVisible();
   await expect.poll(() => logo.evaluate(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0)).toBe(true);
   await page.getByLabel("Usuario", { exact: true }).fill(username);
-  await page.getByLabel("Contraseña", { exact: true }).fill("CeicomDemo2026!");
+  await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/$/);
 }
@@ -74,4 +74,46 @@ test("catálogos y navegación móvil conservan acceso a las funciones", async (
   await expect(page.getByRole("heading", { name: "Administración de Empresas", exact: true })).toBeVisible();
   await expect(page.getByRole("status")).toContainText("Cambios guardados");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("altas con rol y CI, cambio inicial obligatorio y usuario propio", async ({ page }) => {
+  await login(page, "admin_demo");
+  await page.goto("/admin/students");
+  await expect(page.getByLabel("Rol", { exact: true })).toHaveValue("STUDENT");
+  await page.getByLabel("Carnet de identidad (CI)", { exact: true }).fill("8877665");
+  await page.getByLabel("Nombres", { exact: true }).fill("Lucía");
+  await page.getByLabel("Apellidos", { exact: true }).fill("Pérez");
+  await page.getByLabel("N.º de matrícula / código institucional", { exact: true }).fill("TEST-2026-03");
+  await page.getByLabel("Gestión de ingreso", { exact: true }).fill("2026");
+  await page.getByRole("button", { name: "Registrar estudiante", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Cambios guardados");
+  await expect(page.getByRole("heading", { name: "TEST-2026-03 · Lucía Pérez", exact: true })).toBeVisible();
+  await page.goto("/admin/teachers");
+  await expect(page.getByLabel("Rol", { exact: true })).toHaveValue("TEACHER");
+  await page.getByLabel("Carnet de identidad (CI)", { exact: true }).fill("8877666");
+  await page.getByLabel("Nombres", { exact: true }).fill("Pedro");
+  await page.getByLabel("Apellidos", { exact: true }).fill("Rojas");
+  await page.getByRole("button", { name: "Registrar docente", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Pedro Rojas", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await page.getByLabel("Usuario", { exact: true }).fill("8877665");
+  await page.getByLabel("Contraseña", { exact: true }).fill("8877665");
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/password/);
+  await page.goto("/"); await expect(page).toHaveURL(/\/password/);
+  expect((await page.request.get("/planilla/1")).status()).toBe(403);
+  await page.getByLabel("Contraseña actual", { exact: true }).fill("8877665");
+  await page.getByLabel("Nueva contraseña", { exact: true }).fill("CeicomPersonal2026!");
+  await page.getByLabel("Repite la nueva contraseña", { exact: true }).fill("CeicomPersonal2026!");
+  await page.getByRole("button", { name: "Guardar contraseña" }).click();
+  await expect(page.getByRole("status")).toContainText("Contraseña actualizada");
+  await page.goto("/account");
+  await page.getByLabel("Nuevo usuario", { exact: true }).fill("lucia.perez");
+  await page.getByLabel("Contraseña actual", { exact: true }).fill("CeicomPersonal2026!");
+  await page.getByRole("button", { name: "Guardar usuario" }).click();
+  await expect(page.getByRole("status")).toContainText("Usuario actualizado");
+  await expect(page.getByText(/Estudiante · CI: 8877665/)).toBeVisible();
+  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await login(page, "lucia.perez", "CeicomPersonal2026!");
+  await expect(page.getByText("TEST-2026-03", { exact: true })).toBeVisible();
 });

@@ -13,15 +13,16 @@ export function Notice({ query }: { query: Query }) {
 export function Logo() {
   return <Image className="institution-logo" src="/brand/ceicom-logo.png" alt="Instituto Tecnológico Ceicom" width={1881} height={836} priority />;
 }
-export async function Shell({ children }: { children: React.ReactNode }) {
-  const user = await requireUser();
+export async function Shell({ children, allowTemporary = false }: { children: React.ReactNode; allowTemporary?: boolean }) {
+  const user = await requireUser({ allowTemporary });
   return <div className="app">
     <aside><Link href="/" className="brand"><Logo /></Link><div className="aside-label">REGISTRO ACADÉMICO</div>
       <nav aria-label="Navegación principal"><Link href="/">Panel principal <span>↗</span></Link>
-        {user.isSuperuser && <><Link href="/admin">Catálogos y usuarios</Link><Link href="/admin/auditoria">Auditoría</Link></>}
+        {user.isSuperuser && <><Link href="/admin/students">Estudiantes</Link><Link href="/admin/teachers">Docentes</Link><Link href="/admin">Catálogos y usuarios</Link><Link href="/admin/auditoria">Auditoría</Link></>}
+        {!user.mustChangePassword && <Link href="/account">Mi cuenta</Link>}
         <Link href="/password">Cambiar contraseña</Link></nav>
       <div className="aside-bottom"><div className="avatar">{displayName(user).slice(0, 1)}</div><strong>{displayName(user)}</strong>
-        <small>{user.isSuperuser ? "Administración" : "Mi cuenta"}</small><form action={logoutAction}><button className="text-button">Cerrar sesión →</button></form></div>
+        <small>{user.isSuperuser ? "Administrador" : user.role === "STUDENT" ? "Estudiante" : "Docente"}</small><form action={logoutAction}><button className="text-button">Cerrar sesión →</button></form></div>
     </aside>
     <div className="workspace"><header><span>Instituto Tecnológico CEICOM</span><span className="institution-tag">Portal académico</span></header>
       <main>{children}</main><footer>CEICOM · Registro académico <span>Hora institucional: Bolivia (UTC−04)</span></footer></div>

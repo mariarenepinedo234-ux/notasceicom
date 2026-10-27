@@ -6,8 +6,9 @@ import { db } from "@/lib/db";
 import { createSession, destroySession, requireAdmin, requireUser, tokenHash } from "@/lib/auth";
 import { atomic, audit, saveGrades, setVisibility, transferEnrollment } from "@/lib/academic";
 import { isCatalog, saveCatalog } from "@/lib/catalog";
+import { updateOwnPassword, updateOwnUsername } from "@/lib/people";
 import { DomainError, id, invariant } from "@/lib/rules";
-import { hashPassword, validatePassword, verifyPassword } from "@/lib/password";
+import { verifyPassword } from "@/lib/password";
 function value(form: FormData, key: string) {
   const v = form.get(key);
   invariant(typeof v === "string", "Falta el campo " + key + ".");
@@ -46,30 +47,19 @@ export async function loginAction(form: FormData) {
     await createSession(user);
   } catch (e) { message = errorMessage(e); }
   if (message) redirect("/login?" + new URLSearchParams({ error: message }));
-  redirect("/");
+  redirect(user?.mustChangePassword ? "/password" : "/");
 }
 export async function logoutAction() {
   await destroySession();
   redirect("/login");
 }
 export async function passwordAction(form: FormData) {
-  const actor = await requireUser();
+  const actor = await requireUser({ allowTemporary: true });
   let message: string | undefined;
   try {
     const previous = value(form, "currentPassword"), next = value(form, "password");
     invariant(next === value(form, "confirmPassword"), "Las contraseñas no coinciden.");
-    validatePassword(next, actor.username);
-    const user = await db.user.findUniqueOrThrow({ where: { id: actor.id } });
-    invariant(await verifyPassword(previous, user.password), "La contraseña actual es incorrecta.");
-    const password = await hashPassword(next);
-    const updated = await atomic(async tx => {
-      const changed = await tx.user.updateMany({ where: { id: actor.id, password: user.password, isActive: true },
-        data: { password, sessionVersion: { increment: 1 } } });
-      invariant(changed.count === 1, "La cuenta cambió. Inicia sesión otra vez.");
-      await tx.session.deleteMany({ where: { userId: actor.id } });
-      await audit(tx, actor.id, "Cambio de contraseña", "Contraseña cambiada por su titular; sesiones anteriores revocadas.");
-      return tx.user.findUniqueOrThrow({ where: { id: actor.id } });
-    });
+    const updated = await updateOwnPassword(actor.id, previous, next);
     await createSession(updated);
   } catch (e) { message = errorMessage(e); }
   redirect("/password?" + new URLSearchParams(message ? { error: message } : { success: "Contraseña actualizada." }));
@@ -106,10 +96,21 @@ export async function catalogAction(form: FormData) {
   const recordId = record ? id(record) : null;
   await run("/admin/" + kind, () => {
     const raw: Record<string, unknown> = Object.fromEntries(form.entries());
-    if (kind === "users") {
+    if (["users", "students", "teachers"].includes(kind)) {
       raw.isActive = form.get("isActive") === "on";
       raw.isSuperuser = form.get("isSuperuser") === "on";
     }
     return saveCatalog(actor.id, kind, recordId, raw);
   });
+}
+
+export async function accountAction(form: FormData) {
+  const actor = await requireUser();
+  let message: string | undefined;
+  try {
+    const updated = await updateOwnUsername(actor.id, value(form, "username"), value(form, "currentPassword"));
+    await createSession(updated);
+  } catch (e) { message = errorMessage(e); }
+  if (!message) revalidatePath("/", "layout");
+  redirect("/account?" + new URLSearchParams(message ? { error: message } : { success: "Usuario actualizado. Tu CI y expediente se conservan." }));
 }

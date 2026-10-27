@@ -6,6 +6,7 @@ export type Actor = { id: number; isSuperuser: boolean };
 export async function actorIn(tx: Tx, actorId: number, admin = false) {
   const actor = await tx.user.findUnique({ where: { id: id(actorId) } });
   invariant(actor?.isActive, "La cuenta no está habilitada.");
+  invariant(!actor.mustChangePassword, "Primero cambia tu contraseña temporal.");
   invariant(!admin || actor.isSuperuser, "Acceso exclusivo de administración.");
   return actor;
 }
@@ -101,7 +102,7 @@ export async function setVisibility(actorId: number, studentId: number, enabled:
 }
 export async function studentResults(actorId: number, year?: string, module?: string, client = db) {
   const actor = await client.user.findUnique({ where: { id: actorId }, include: { student: true } });
-  invariant(actor?.isActive && actor.student, "No existe un perfil de estudiante habilitado.");
+  invariant(actor?.isActive && !actor.mustChangePassword && actor.student, "No existe un perfil de estudiante habilitado.");
   if (!actor.student.canViewGrades) return [];
   if ((year && !/^\d{4}$/.test(year)) || (module && !/^[1-4]$/.test(module))) return [];
   return client.registration.findMany({ where: {
