@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique @db.VarChar(150)
+  password     String    @db.VarChar(256)
+  firstName    String    @default("") @db.VarChar(150)
+  lastName     String    @default("") @db.VarChar(150)
+  email        String    @default("") @db.VarChar(254)
+  role         Role      @default(TEACHER)
+  ci           String?   @unique @db.VarChar(30)
+  mustChangePassword Boolean @default(false)
+  isActive     Boolean   @default(true)
+  isSuperuser  Boolean   @default(false)
+  isStaff      Boolean   @default(false)
+  sessionVersion Int     @default(0)
+  dateJoined   DateTime  @default(now()) @db.Timestamptz(3)
+  student      Student?
+  teaching     Offering[]
+  extensions   Extension[]
+  auditEvents  AuditEvent[]
+  sessions     Session[]
+}
+model Session {
+  tokenHash String @id @db.VarChar(64)
+  userId Int
+  version Int
+  expires DateTime @db.Timestamptz(3)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([expires])
+}
+model LoginAttempt {
+  key String @id @db.VarChar(64)
+  count Int @default(1)
+  window DateTime @db.Timestamptz(3)
+}
+model Career {
+  id Int @id @default(autoincrement())
+  name String @unique @db.VarChar(150)
+  subjects Subject[]
+  enrollments Enrollment[]
+}
+model AcademicYear {
+  id Int @id @default(autoincrement())
+  year Int @unique
+  modules Module[]
+  enrollments Enrollment[]
+}
+model Module {
+  id Int @id @default(autoincrement())
+  yearId Int
+  number Int @db.SmallInt
+  starts DateTime @db.Date
+  ends DateTime @db.Date
+  year AcademicYear @relation(fields: [yearId], references: [id], onDelete: Restrict)
+  offerings Offering[]
+  @@unique([yearId, number])
+}
+model Subject {
+  id Int @id @default(autoincrement())
+  careerId Int
+  name String @db.VarChar(150)
+  level Int @db.SmallInt
+  part Int @default(1) @db.SmallInt
+  career Career @relation(fields: [careerId], references: [id], onDelete: Restrict)
+  offerings Offering[]
+  @@unique([careerId, name, part])
+}
+model Student {
+  id Int @id @default(autoincrement())
+  userId Int @unique
+  code String @unique @db.VarChar(30)
+  entryYear Int
+  canViewGrades Boolean @default(true)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  enrollments Enrollment[]
+}
+model Enrollment {
+  id Int @id @default(autoincrement())
+  studentId Int
+  yearId Int
+  careerId Int
+  level Int @db.SmallInt
+  shift String @db.VarChar(1)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  year AcademicYear @relation(fields: [yearId], references: [id], onDelete: Restrict)
+  career Career @relation(fields: [careerId], references: [id], onDelete: Restrict)
+  registrations Registration[]
+  @@unique([studentId, yearId, careerId])
+}
+model Offering {
+  id Int @id @default(autoincrement())
+  subjectId Int
+  moduleId Int
+  teacherId Int
+  shift String @db.VarChar(1)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Restrict)
+  teacher User @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  registrations Registration[]
+  extensions Extension[]
+  @@unique([subjectId, moduleId, shift])
+  @@index([teacherId])
+}
+model Registration {
+  id Int @id @default(autoincrement())
+  enrollmentId Int
+  offeringId Int
+  grade Decimal? @db.Decimal(5,2)
+  published Boolean @default(false)
+  version Int @default(0)
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  offering Offering @relation(fields: [offeringId], references: [id], onDelete: Restrict)
+  @@unique([enrollmentId, offeringId])
+  @@index([offeringId])
+}
+model Extension {
+  id Int @id @default(autoincrement())
+  offeringId Int
+  until DateTime @db.Timestamptz(3)
+  reason String
+  authorizedById Int
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  offering Offering @relation(fields: [offeringId], references: [id], onDelete: Restrict)
+  authorizedBy User @relation(fields: [authorizedById], references: [id], onDelete: Restrict)
+  @@index([offeringId, until])
+}
+model AuditEvent {
+  id Int @id @default(autoincrement())
+  actorId Int
+  action String @db.VarChar(100)
+  details String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  actor User @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  @@index([createdAt])
+}

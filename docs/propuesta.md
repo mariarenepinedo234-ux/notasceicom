@@ -1,6 +1,6 @@
 # Registro académico CEICOM
 
-Estado: propuesta funcional de referencia. Ya existe una primera aplicación Django con datos ficticios; ver README.md y docs/version-0.1.md para el alcance implementado. Todavía no está lista para uso institucional.
+Estado: propuesta histórica de referencia. Para los requisitos vigentes de la entrega Next.js, ver [requisitos confirmados](requisitos-confirmados.md) y [migración](migracion-nextjs.md). Ya existe una primera aplicación Django con datos ficticios; ver README.md y docs/version-0.1.md para el alcance implementado. Todavía no está lista para uso institucional.
 
 ## Primera versión
 

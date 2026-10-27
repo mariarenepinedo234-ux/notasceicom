@@ -1,0 +1,63 @@
+INSTITUTO TECNOLÓGICO CEICOM · REGISTRO ACADÉMICO
+Next.js · TypeScript · Prisma · PostgreSQL
+
+Este ZIP contiene el código fuente; no es un instalador de Windows.
+Lee README.md y docs/requisitos-confirmados.md antes de comenzar.
+
+REQUISITOS
+- Node.js 22.14 o posterior.
+- PostgreSQL 17 disponible localmente o en un servidor.
+- Opcional: Docker para crear PostgreSQL con compose.yaml.
+
+SI YA TIENES EL SISTEMA FUNCIONANDO
+Lee docs/actualizacion-0.3.md. Conserva tu .env y tu base.
+Ejecuta npm ci, npm run db:migrate y npm run dev.
+No borres datos ni vuelvas a cargar demostración.
+
+INICIO RÁPIDO
+1. Descomprime el ZIP y abre una terminal en la carpeta que contiene package.json.
+2. Copia .env.example a .env y configura DATABASE_URL para TU base PostgreSQL.
+   Linux/macOS: cp .env.example .env
+   PowerShell: Copy-Item .env.example .env
+3. Ejecuta:
+   npm ci
+   npm run db:migrate
+4. Para probar con información ficticia, solo en una base vacía:
+   npm run db:seed -- --confirm-demo
+5. Ejecuta:
+   npm run dev
+6. Abre http://localhost:3000
+
+DEMOSTRACIÓN
+Usuarios: admin_demo, docente_demo, estudiante_demo
+Contraseña pública de prueba: CeicomDemo2026!
+No utilices estas cuentas con datos reales.
+
+BASE LOCAL CON DOCKER (OPCIONAL)
+Antes del paso 3, en Linux/macOS:
+  POSTGRES_PASSWORD=ceicom_local docker compose up -d postgres
+En PowerShell:
+  $env:POSTGRES_PASSWORD='ceicom_local'
+  docker compose up -d postgres
+La conexión de .env.example corresponde a esta configuración local.
+
+LOGO
+El login y el menú ya muestran una adaptación digital del logo de referencia.
+Está en public/brand/ceicom-logo.png y puede sustituirse por el arte oficial.
+
+DATOS DJANGO
+No mezcles la demostración con tus datos institucionales.
+Para importar los datos de Django, sigue docs/migracion-nextjs.md.
+El sistema conserva notas, matrículas, turnos históricos y auditoría.
+El ZIP no contiene bases de datos ni contraseñas institucionales.
+
+ANTES DEL USO REAL
+Configura HTTPS, cambia/elimina cuentas demo, valida permisos y comprueba
+copias de seguridad con restauración. Consulta README.md y docs/ para
+las decisiones académicas pendientes y los pasos de producción.
+
+REGISTRO DE PERSONAS
+En Estudiantes o Docentes registra el CI y los datos personales.
+Las cuentas NUEVAS usan el CI como usuario y contraseña temporal.
+Se exige cambiar esa contraseña al entrar. El usuario se puede cambiar
+después desde Mi cuenta. Las cuentas anteriores siguen como antes.

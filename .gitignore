@@ -4,5 +4,11 @@ __pycache__/
 db.sqlite3
 .local-secret
 .env
-*.log
-.pytest_cache/
+.env.*
+!.env.example
+node_modules/
+.next/
+*.tsbuildinfo
+coverage/
+work/
+django-export*.json
