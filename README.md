@@ -11,7 +11,7 @@ Requisitos: Node.js 22.14 o posterior y PostgreSQL 17.
 ```sh
 cp .env.example .env
 # Ajusta DATABASE_URL antes de continuar.
-npm install
+npm ci
 npm run db:migrate
 ```
 

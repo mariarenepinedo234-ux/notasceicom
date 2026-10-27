@@ -51,8 +51,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <div className="student-summary"><strong>{student.code}</strong><span>Ingreso {student.entryYear}</span><span>Cada parte se aprueba con 61/100. No se promedian las partes.</span></div>
       {!student.canViewGrades ? <section className="notice error"><h2>Consulta de notas temporalmente suspendida</h2><p>Comunícate con administración para habilitar la consulta. Tus notas se conservan.</p></section> :
         <section className="panel"><div className="panel-head"><h2>Mi historial académico</h2><form className="filters" method="get">
-          <label>Gestión<select name="year" defaultValue={year}><option value="">Todas</option>{years.map(e => <option key={e.yearId} value={e.year.year}>{e.year.year}</option>)}</select></label>
-          <label>Módulo<select name="module" defaultValue={module}><option value="">Todos</option>{[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}</select></label><button>Filtrar</button></form></div>
+          <label>Gestión<select aria-label="Gestión" name="year" defaultValue={year}><option value="">Todas</option>{years.map(e => <option key={e.yearId} value={e.year.year}>{e.year.year}</option>)}</select></label>
+          <label>Módulo<select aria-label="Módulo" name="module" defaultValue={module}><option value="">Todos</option>{[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}</select></label><button>Filtrar</button></form></div>
           <div className="table-wrap"><table><thead><tr><th>Materia / parte</th><th>Gestión / módulo</th><th>Turno cursado</th><th>Nota</th><th>Resultado</th></tr></thead><tbody>
             {rows.map(r => <tr key={r.id}><td><strong>{r.offering.subject.name} · Parte {r.offering.subject.part}</strong><small>{r.offering.subject.career.name}</small></td>
               <td>{r.enrollment.year.year} · Módulo {r.offering.module.number}</td><td>{shiftName(r.offering.shift)}</td><td className="grade">{r.grade?.toString()} <small>/ 100</small></td>

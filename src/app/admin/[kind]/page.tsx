@@ -36,7 +36,7 @@ export default async function Catalog({ params, searchParams }: { params: Promis
             const frozen = Boolean(editing && field.immutable);
             return <label key={field.name} className={field.type === "checkbox" ? "checkbox-label" : ""}>{field.label}
               {frozen && <input type="hidden" name={field.name} value={current} />}
-              {field.options ? <select name={field.name} defaultValue={current} required={field.required} disabled={frozen}>
+              {field.options ? <select aria-label={field.label} name={field.name} defaultValue={current} required={field.required} disabled={frozen}>
                 <option value="" disabled>Selecciona una opción</option>{field.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select> :
                 field.type === "textarea" ? <textarea name={field.name} defaultValue={current} required={field.required} maxLength={field.maxLength} rows={3} /> :
                 field.type === "checkbox" ? <input name={field.name} type="checkbox" defaultChecked={editing ? Boolean(raw) : field.name === "isActive"} /> :

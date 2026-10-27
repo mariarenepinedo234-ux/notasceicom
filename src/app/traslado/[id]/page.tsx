@@ -16,7 +16,7 @@ export default async function Transfer({ params, searchParams }: { params: Promi
     <Notice query={await searchParams} /><section className="panel padded narrow"><h2>Cambiar turno</h2>
       <p>Las notas publicadas conservan su turno original. Las inscripciones sin publicar, con sus borradores, se trasladan a ofertas de la misma materia, parte y módulo.</p>
       <p>Si falta alguna oferta de destino, se rechaza el traslado completo.</p><form action={transferAction}><input type="hidden" name="enrollmentId" value={e.id} />
-        <label>Turno de destino<select name="shift" required defaultValue=""><option value="" disabled>Selecciona un turno</option>
+        <label>Turno de destino<select aria-label="Turno de destino" name="shift" required defaultValue=""><option value="" disabled>Selecciona un turno</option>
           {Object.entries(shifts).filter(([key]) => key !== e.shift).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
         <label>Motivo<textarea name="reason" maxLength={4000} rows={3} required /></label><button>Registrar traslado</button>
       </form></section></Shell>;
