@@ -30,7 +30,7 @@ export default async function Catalog({ params, searchParams }: { params: Promis
       </div></div>)}
       {!view.rows.length && <div className="empty">Aún no hay registros en este catálogo.</div>}</section>
       <section className="panel padded catalog-form"><h2>{editing ? "Editar #" + editing.id : "Nuevo registro"}</h2>
-        {kind === "users" || kind === "students" || kind === "teachers" ? <PersonForm key={editing?.id ?? "new"} kind={kind} recordId={editing?.id} initial={editing?.values} /> : <form action={catalogAction} key={editing?.id ?? "new"}><input type="hidden" name="kind" value={kind} />
+        {kind === "users" || kind === "students" || kind === "teachers" ? <PersonForm key={kind + ":" + (editing?.id ?? "new")} kind={kind} recordId={editing?.id} initial={editing?.values} /> : <form action={catalogAction} key={editing?.id ?? "new"}><input type="hidden" name="kind" value={kind} />
           <input type="hidden" name="recordId" value={editing?.id ?? ""} />
           {view.fields.map(field => {
             const raw = editing?.values[field.name], current = fieldValue(raw, field.type);

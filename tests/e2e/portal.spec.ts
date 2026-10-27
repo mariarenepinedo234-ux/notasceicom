@@ -88,7 +88,7 @@ test("altas con rol y CI, cambio inicial obligatorio y usuario propio", async ({
   await page.getByRole("button", { name: "Registrar estudiante", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Cambios guardados");
   await expect(page.getByRole("heading", { name: "TEST-2026-03 · Lucía Pérez", exact: true })).toBeVisible();
-  await page.goto("/admin/teachers");
+  await page.getByRole("link", { name: "Docentes", exact: true }).first().click();
   await expect(page.getByLabel("Rol", { exact: true })).toHaveValue("TEACHER");
   await page.getByLabel("Carnet de identidad (CI)", { exact: true }).fill("8877666");
   await page.getByLabel("Nombres", { exact: true }).fill("Pedro");
