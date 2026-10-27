@@ -1,70 +1,87 @@
-# CEICOM · Registro académico · v0.1
+# CEICOM · Registro académico · Next.js
 
-Primera versión funcional de desarrollo: Django 5.2, Python 3.12 y SQLite. Incluye autenticación, permisos en servidor, persistencia y diseño adaptable en guindo y crema. La maqueta anterior se conserva en `prototipo/`.
+Migración de Django a **Next.js App Router, TypeScript, Prisma y PostgreSQL**. Incluye los portales de administración, docentes y estudiantes y los flujos académicos de la versión Django: catálogos, matrículas, ofertas, inscripciones, notas, publicación, reaperturas, correcciones, traslado, consulta restringida, CSV y auditoría.
 
-## Instalar y ejecutar
+El código Django se conserva para exportar los datos y facilitar la comparación. La aplicación principal de esta rama se ejecuta con Node.js.
 
-Desde la raíz del proyecto (en este entorno: `/workspace/notasceicom`):
+## Instalar
 
-```sh
-python -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python manage.py migrate --noinput
-.venv/bin/python manage.py check
-.venv/bin/python manage.py runserver 0.0.0.0:8080 --noreload
-```
-
-El servidor es para desarrollo. La base `db.sqlite3` conserva los datos entre reinicios y está excluida de Git. No borrarla para actualizar el sistema; las migraciones actualizan su estructura.
-
-## Demostración con datos ficticios
-
-En una base vacía, antes de iniciar el servidor:
+Requisitos: Node.js 22.14 o posterior y PostgreSQL 17.
 
 ```sh
-.venv/bin/python manage.py seed_demo --confirm-demo
+cp .env.example .env
+# Ajusta DATABASE_URL antes de continuar.
+npm install
+npm run db:migrate
 ```
 
-| Perfil | Usuario | Contraseña de demostración |
-|---|---|---|
-| Administrador | `admin_demo` | `CeicomDemo2026!` |
-| Docente | `docente_demo` | `CeicomDemo2026!` |
-| Estudiante | `estudiante_demo` | `CeicomDemo2026!` |
-
-Son cuentas públicas para pruebas locales. No usarlas con información real ni exponerlas a Internet. El comando se puede repetir sin restablecer contraseñas o notas. Si ya existen datos ajenos a la demostración, rechaza la carga.
-
-Para una base vacía sin demostración: `.venv/bin/python manage.py createsuperuser`. El administrador crea usuarios desde «Catálogos y usuarios». Solo el administrador lleva activados «superusuario» y «acceso al sitio administrativo». Para un estudiante, vincular su usuario a un perfil de estudiante. Para un docente, asignar su usuario a una oferta de materia. No necesitan permisos administrativos.
-
-## Funciones disponibles
-
-- Usuarios, carreras, gestiones, módulos con fechas, materias/partes de los tres años, matrículas, asignaciones e inscripciones.
-- Docente: ve solo sus ofertas, guarda borradores y publica resultados. La publicación directa por el docente es provisional y debe confirmarse con secretaría.
-- Notas de 1 a 100; cada parte aprueba desde 61. Vacío significa pendiente. Provisionalmente se admiten dos decimales, sin redondeo automático.
-- Tres días completos posteriores al fin del módulo, omitiendo sábados y domingos. Provisionalmente se permite hasta el final del tercer día en `America/La_Paz`; el cierre mostrado es el instante exclusivo de las 00:00 del día siguiente. No se excluyen feriados. El servidor rechaza cargas vencidas incluso por solicitudes directas.
-- Reaperturas por oferta, con motivo y vencimiento, desde «Autorizar carga de notas».
-- Una nota publicada solo la corrige administración en su planilla, con motivo obligatorio. La auditoría conserva nota anterior, nueva, autor y fecha.
-- Traslado desde el panel: conserva notas publicadas y sus turnos; mueve inscripciones no publicadas y sus borradores a ofertas compatibles de la misma materia, parte y módulo. Si falta alguna, rechaza todo el traslado. Las demás gestiones no se modifican.
-- Consulta propia por gestión y módulo. Restricción manual con motivo y auditoría, sin integración con cobros ni eliminación de notas.
-- Planilla CSV para administración y docente asignado. Todavía no es el formato impreso oficial ni un PDF.
-- Cambio de contraseña autenticado; administración puede restablecer contraseñas en el catálogo de usuarios.
-
-Orden de altas: usuarios → carreras y gestiones → módulos → materias/partes → estudiantes → matrículas → ofertas → inscripciones. Luego se registran notas desde «Abrir planilla».
-
-## Verificación
+PostgreSQL local opcional con Docker:
 
 ```sh
-.venv/bin/python manage.py test academics
-.venv/bin/python manage.py check
-node --test tests/academic-rules.test.mjs
+POSTGRES_PASSWORD=ceicom_local docker compose up -d postgres
 ```
 
-Las pruebas de Django usan una base temporal separada; no borran los datos del sistema.
+La URL de ejemplo de .env corresponde a esta contraseña exclusivamente local. Usa otra contraseña en cualquier despliegue real y actualiza DATABASE_URL. El volumen conserva PostgreSQL entre reinicios.
 
-## Alcance y pendientes
+Crear el administrador inicial en una instalación sin datos importados:
 
-Versión para evaluación local, sin despliegue público. Los turnos de esta versión están predefinidos como mañana, tarde y noche. Faltan logo, formato institucional/PDF, plan de estudios completo y reglas de recuperación/prerrequisitos. Confirmar decimales, hora de corte, feriados y responsable de publicación antes de uso institucional.
+```sh
+CEICOM_ADMIN_USER=administracion CEICOM_ADMIN_PASSWORD='elige-una-clave-unica-y-larga' npm run admin:create
+npm run dev
+```
 
-Para producción se requiere PostgreSQL, HTTPS, servidor de aplicación, archivos estáticos, protección contra intentos repetidos de acceso y copias con restauración probada. La recuperación automática por correo aún no está implementada. La auditoría es de aplicación, no un registro externo inmutable. No introducir datos reales hasta completar esa preparación.
+Abre http://localhost:3000. Para producción:
 
-Variables: `CEICOM_DEBUG` (predeterminado `1`), `CEICOM_SECRET_KEY`, `CEICOM_ALLOWED_HOSTS` (lista separada por comas), `CEICOM_TIME_ZONE` (predeterminado `America/La_Paz`). Con `CEICOM_DEBUG=0` es obligatorio proporcionar una clave secreta; no escribirla en Git. En desarrollo se genera `.local-secret`, excluido de Git. PostgreSQL aún requiere configuración adicional.
+```sh
+npm run build
+npm start
+```
 
-Ver [propuesta funcional](docs/propuesta.md) y [estado de la versión](docs/version-0.1.md).
+El servicio debe estar detrás de HTTPS en producción, donde las cookies de sesión son Secure. No uses datos reales hasta verificar permisos, copias de seguridad y restauración.
+
+## Conservar los datos de Django
+
+No es necesario restablecer las contraseñas PBKDF2 predeterminadas de Django. Conserva el origen, exporta desde su entorno Python e importa a una base PostgreSQL vacía:
+
+```sh
+python manage.py dumpdata auth.user academics --all --indent 2 --output django-export.json
+# Desde la instalación Next.js:
+npm run db:import-django -- /ruta/segura/django-export.json --confirm-empty-target
+```
+
+El importador valida y conserva IDs, contraseñas compatibles, notas, publicación, matrículas, turnos históricos, restricciones, autorizaciones y auditoría. Verifica recuentos y restablece secuencias. Un error revierte toda la importación. No mezcles una demostración con datos migrados.
+
+Lee el [procedimiento completo y correspondencia funcional](docs/migracion-nextjs.md) antes de trasladar datos institucionales.
+
+## Demostración local
+
+En una base vacía:
+
+```sh
+npm run db:seed -- --confirm-demo
+```
+
+Usuarios: `admin_demo`, `docente_demo`, `estudiante_demo`. Contraseña pública de prueba: `CeicomDemo2026!`. La carga es idempotente y no restablece notas ni contraseñas; rechaza datos ajenos a la demostración. No expongas estas cuentas con datos reales.
+
+## Uso
+
+- Administración: crea usuarios → carreras y gestiones → módulos → materias/partes → estudiantes → matrículas → ofertas → inscripciones.
+- Docente: abre sus planillas, guarda borradores y publica resultados. Solo puede editar en plazo o con autorización; las notas publicadas se corrigen por administración con motivo.
+- Estudiante: consulta únicamente sus resultados publicados y habilitados, filtrados por gestión y módulo.
+- Administración: autoriza reaperturas por oferta, registra traslados de turno y restringe/habilita consulta con motivo. La auditoría conserva los cambios.
+
+Notas de 1 a 100, máximo dos decimales, sin redondeo automático y aprobación desde 61 por parte. Los tres días hábiles posteriores al módulo excluyen sábados y domingos y permiten todo el tercer día en America/La_Paz. Feriados, publicación institucional definitiva, PDF, cobros, recuperación por correo y reglas de recuperación/prerrequisitos conservan el alcance pendiente de Django.
+
+## Verificar
+
+```sh
+npm run typecheck
+npm test
+npm run build
+```
+
+Las pruebas PostgreSQL requieren una base separada con nombre terminado en `_test` y `CEICOM_TEST_DB=1`; vacían únicamente esa base de prueba. Ver [instrucciones completas](docs/migracion-nextjs.md#verificaciones-reproducibles). El workflow `.github/workflows/nextjs.yml` ejecuta tipos, pruebas unitarias, integración PostgreSQL, compilación y pruebas de navegador en un servicio aislado.
+
+Variables: `DATABASE_URL`. Las variables `CEICOM_ADMIN_USER` y `CEICOM_ADMIN_PASSWORD` se usan solo para crear un administrador desde consola; no son necesarias para iniciar el servicio. No guardes secretos en Git.
+
+Referencia anterior: [propuesta funcional](docs/propuesta.md) y [versión Django 0.1](docs/version-0.1.md).

@@ -1,0 +1,40 @@
+{
+  "name": "ceicom-registro-academico",
+  "version": "0.2.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "prisma generate && next build",
+    "start": "next start --hostname 0.0.0.0",
+    "typecheck": "prisma generate && tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:integration": "tsx --test tests/integration/*.test.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:import-django": "tsx scripts/import-django.ts",
+    "admin:create": "tsx scripts/create-admin.ts",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "next": "^16.0.10",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "zod": "^4.1.0",
+    "server-only": "^0.0.1",
+    "dotenv": "^16.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "prisma": "^6.19.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "@playwright/test": "^1.56.0"
+  }
+}

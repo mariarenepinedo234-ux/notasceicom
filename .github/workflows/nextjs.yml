@@ -1,0 +1,49 @@
+name: Next.js y PostgreSQL
+on:
+  push:
+    branches: [main, "codex/**"]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ceicom
+          POSTGRES_PASSWORD: ceicom_ci
+          POSTGRES_DB: ceicom_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ceicom -d ceicom_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://ceicom:ceicom_ci@localhost:5432/ceicom_test?schema=public
+      CEICOM_TEST_DB: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - run: npm run db:migrate
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:integration
+      - run: npm run build
+      - run: npm run db:seed -- --confirm-demo
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-artifacts
+          path: |
+            playwright-report/
+            test-results/
+            package-lock.json
