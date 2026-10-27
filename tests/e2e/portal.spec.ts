@@ -11,13 +11,13 @@ test("autenticación, borrador, publicación, consulta propia y permisos", async
   await login(page, "docente_demo");
   const active = page.locator(".module").filter({ hasText: "Módulo 4" }).filter({ hasText: "Mañana" });
   await active.getByRole("link", { name: "Abrir planilla" }).click();
-  await page.getByLabel("Nota de CEI-DEMO-001").fill("83.25");
+  await page.getByLabel("Nota de CEI-DEMO-001", { exact: true }).fill("83.25");
   await page.getByRole("button", { name: "Guardar notas" }).click();
   await expect(page.getByRole("status")).toContainText("Notas guardadas");
-  await expect(page.getByLabel("Nota de CEI-DEMO-001")).toHaveValue("83.25");
+  await expect(page.getByLabel("Nota de CEI-DEMO-001", { exact: true })).toHaveValue("83.25");
   await page.getByLabel("Publicar nota de CEI-DEMO-001").check();
   await page.getByRole("button", { name: "Guardar notas" }).click();
-  await expect(page.getByLabel("Nota de CEI-DEMO-001")).toBeDisabled();
+  await expect(page.getByLabel("Nota de CEI-DEMO-001", { exact: true })).toBeDisabled();
   await page.getByRole("link", { name: "Descargar CSV" }).click({ noWaitAfter: true });
   await page.getByRole("button", { name: "Cerrar sesión" }).click();
   await login(page, "estudiante_demo");
@@ -53,7 +53,7 @@ test("sesión HTTP segura y formulario con origen ajeno rechazado", async ({ pag
     headers: { Origin: "https://untrusted.example", "Content-Type": "application/x-www-form-urlencoded" },
     form: { ...hidden, currentPassword: "CeicomDemo2026!", password: "OtraClave2026!", confirmPassword: "OtraClave2026!" },
   });
-  expect([400, 403, 500]).toContain(response.status());
+  expect(response.status()).toBe(403);
   await page.getByRole("button", { name: "Cerrar sesión" }).click();
   await login(page, "admin_demo"); // El cambio de origen ajeno no se aplicó.
 });

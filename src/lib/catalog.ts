@@ -15,7 +15,7 @@ export const catalogNames = {
 export type Catalog = keyof typeof catalogNames;
 export function isCatalog(s: string): s is Catalog { return Object.hasOwn(catalogNames, s); }
 const schemas = {
-  users: z.object({ username: z.string().trim().min(1).max(150).regex(/^[\w.@+\-]+$/),
+  users: z.object({ username: z.string().trim().min(1).max(150).regex(/^[\p{L}\p{N}_.@+\-]+$/u),
     firstName: z.string().trim().max(150), lastName: z.string().trim().max(150),
     email: z.union([z.literal(""), z.email().max(254)]), isActive: z.boolean(), isSuperuser: z.boolean() }),
   careers: z.object({ name: text }),

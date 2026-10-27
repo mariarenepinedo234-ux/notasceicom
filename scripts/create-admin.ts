@@ -4,7 +4,7 @@ import { invariant } from "../src/lib/rules";
 import { hashPassword, validatePassword } from "../src/lib/password";
 async function main() {
   const username = process.env.CEICOM_ADMIN_USER?.trim(), password = process.env.CEICOM_ADMIN_PASSWORD;
-  invariant(username && /^[\w.@+\-]{1,150}$/.test(username) && password, "Configura CEICOM_ADMIN_USER y CEICOM_ADMIN_PASSWORD.");
+  invariant(username && /^[\p{L}\p{N}_.@+\-]{1,150}$/u.test(username) && password, "Configura CEICOM_ADMIN_USER y CEICOM_ADMIN_PASSWORD.");
   validatePassword(password, username);
   const db = new PrismaClient();
   try {
